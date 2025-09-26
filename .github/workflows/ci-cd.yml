@@ -20,12 +20,13 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      # 1) tests + génération jacoco.xml
       - name: Tests + coverage (JaCoCo)
         run: mvn -B -Psonar verify
-      - name: SonarCloud analysis
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # 2) analyse SonarCloud via le plugin Maven (lit les props du POM)
+      - name: SonarCloud (Maven)
+        run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   docker-push:
     needs: build-test-sonar
