@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-seed-dev
+      author: you
+      context: dev
+      changes:
+        # 1) Department
+        - insert:
+            tableName: department
+            columns:
+              - column:
+                  name: name
+                  value: Engineering
+              - column:
+                  name: description
+                  value: Builds the product
+
+        # 2) Superadmin (reporter par défaut)
+        - insert:
+            tableName: employee
+            columns:
+              - column:
+                  name: username
+                  value: superadmin
+              - column:
+                  name: email
+                  value: superadmin@acme.com
+              - column:
+                  name: password_hash
+                  value: $2a$10$dev-only-placeholder
+              - column:
+                  name: role
+                  value: SUPERADMIN
+              - column:
+                  name: active
+                  valueBoolean: true
+
+        # 3) Projet de base
+        - insert:
+            tableName: project
+            columns:
+              - column:
+                  name: code
+                  value: PRJ-CORE
+              - column:
+                  name: name
+                  value: Core Platform
+              - column:
+                  name: status
+                  value: ACTIVE
+
+        # 4) Ticket de démo (avec sous-selects → SQL pur pour éviter les pièges YAML)
+        - sql:
+            sql: |
+              INSERT INTO ticket (project_id, reporter_id, type, priority, status, title, description)
+              VALUES (
+                (SELECT id FROM project WHERE code = 'PRJ-CORE'),
+                (SELECT id FROM employee WHERE username = 'superadmin'),
+                'BUG', 'HIGH', 'OPEN',
+                'Erreur 500 sur création de ticket',
+                'Steps to reproduce...'
+              );

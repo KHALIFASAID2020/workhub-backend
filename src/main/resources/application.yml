@@ -1,0 +1,10 @@
+spring:
+  application.name: workhub
+  liquibase.change-log: classpath:db/changelog/db.changelog-master.yml
+  jpa:
+    hibernate.ddl-auto: validate
+    open-in-view: false
+    properties.hibernate.jdbc.time_zone: UTC
+management.endpoints.web.exposure.include: health,info
+server.port: 8080
+spring.profiles.active: dev

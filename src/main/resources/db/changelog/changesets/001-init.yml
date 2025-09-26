@@ -1,0 +1,339 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-ext
+      author: you
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  - changeSet:
+      id: 001-department
+      author: you
+      changes:
+        - createTable:
+            tableName: department
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: varchar(512)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-employee
+      author: you
+      changes:
+        - createTable:
+            tableName: employee
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email
+                  type: varchar(254)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password_hash
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: varchar(60)
+              - column:
+                  name: last_name
+                  type: varchar(60)
+              - column:
+                  name: role
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: employee
+            baseColumnNames: department_id
+            referencedTableName: department
+            referencedColumnNames: id
+            constraintName: fk_employee_department
+        - sql:
+            sql: |
+              ALTER TABLE employee
+              ADD CONSTRAINT chk_employee_role
+              CHECK (role IN ('ADMIN','USER','SUPERADMIN'));
+
+  - changeSet:
+      id: 001-project
+      author: you
+      changes:
+        - createTable:
+            tableName: project
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: varchar(160)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(1024)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PLANNED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: uuid
+              - column:
+                  name: owner_id
+                  type: uuid
+              - column:
+                  name: start_date
+                  type: date
+              - column:
+                  name: end_date
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: project
+            baseColumnNames: department_id
+            referencedTableName: department
+            referencedColumnNames: id
+            constraintName: fk_project_department
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: project
+            baseColumnNames: owner_id
+            referencedTableName: employee
+            referencedColumnNames: id
+            constraintName: fk_project_owner
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE project
+              ADD CONSTRAINT chk_project_status
+              CHECK (status IN ('PLANNED','ACTIVE','ON_HOLD','DONE'));
+
+  - changeSet:
+      id: 001-project-member
+      author: you
+      changes:
+        - createTable:
+            tableName: project_member
+            columns:
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: employee_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: member_role
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: joined_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: project_member
+            columnNames: project_id, employee_id
+            constraintName: pk_project_member
+        - addForeignKeyConstraint:
+            baseTableName: project_member
+            baseColumnNames: project_id
+            referencedTableName: project
+            referencedColumnNames: id
+            constraintName: fk_member_project
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: project_member
+            baseColumnNames: employee_id
+            referencedTableName: employee
+            referencedColumnNames: id
+            constraintName: fk_member_employee
+            onDelete: CASCADE
+        - sql:
+            sql: |
+              ALTER TABLE project_member
+              ADD CONSTRAINT chk_member_role
+              CHECK (member_role IN ('MANAGER','CONTRIBUTOR','VIEWER'));
+
+  - changeSet:
+      id: 001-ticket
+      author: you
+      changes:
+        - createTable:
+            tableName: ticket
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reporter_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignee_id
+                  type: uuid
+              - column:
+                  name: type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: varchar(20)
+                  defaultValue: MEDIUM
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: OPEN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+              - column:
+                  name: due_date
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: project_id
+            referencedTableName: project
+            referencedColumnNames: id
+            constraintName: fk_ticket_project
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: reporter_id
+            referencedTableName: employee
+            referencedColumnNames: id
+            constraintName: fk_ticket_reporter
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: assignee_id
+            referencedTableName: employee
+            referencedColumnNames: id
+            constraintName: fk_ticket_assignee
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE ticket
+              ADD CONSTRAINT chk_ticket_type
+              CHECK (type IN ('BUG','TASK','STORY'));
+        - sql:
+            sql: |
+              ALTER TABLE ticket
+              ADD CONSTRAINT chk_ticket_priority
+              CHECK (priority IN ('LOW','MEDIUM','HIGH','CRITICAL'));
+        - sql:
+            sql: |
+              ALTER TABLE ticket
+              ADD CONSTRAINT chk_ticket_status
+              CHECK (status IN ('OPEN','IN_PROGRESS','DONE','CANCELLED'));
+        - createIndex:
+            tableName: ticket
+            indexName: idx_ticket_project_status
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: status

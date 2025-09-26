@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: classpath:db/changelog/changesets/001-init.yml
+  - include:
+      file: classpath:db/changelog/changesets/002-seed-dev.yml
+      context: dev
+
