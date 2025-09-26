@@ -22,14 +22,13 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # 1) Tests + génération du rapport jacoco.xml
+      # 1) Tests + generation du rapport jacoco.xml
       - name: Tests + coverage (JaCoCo)
         run: mvn -B -Psonar verify
 
       # 2) Analyse SonarCloud via le plugin Maven (lit le pom.xml)
       - name: SonarCloud (Maven)
-        run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
+        run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }
 
   docker-push:
     needs: build-test-sonar
