@@ -30,16 +30,19 @@ jobs:
         run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   # 2) Build & push image Docker vers GHCR
-  docker-push:
+    docker-push:
     needs: build-test-sonar
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compute image tag (short SHA)
+      - name: Compute image meta (tag + owner lower)
         id: meta
-        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
+        shell: bash
+        run: |
+          echo "TAG=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
 
       - uses: docker/setup-buildx-action@v3
 
@@ -54,8 +57,9 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/workhub-backend:${{ steps.meta.outputs.TAG }}
-            ghcr.io/${{ github.repository_owner }}/workhub-backend:latest
+            ghcr.io/${{ steps.meta.outputs.OWNER_LC }}/workhub-backend:${{ steps.meta.outputs.TAG }}
+            ghcr.io/${{ steps.meta.outputs.OWNER_LC }}/workhub-backend:latest
+
 
   # 3) Déploiement sur la VM (test des secrets dans l'étape via env.*)
   deploy:
