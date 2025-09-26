@@ -15,18 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      # 1) tests + génération jacoco.xml
+
+      # 1) Tests + génération du rapport jacoco.xml
       - name: Tests + coverage (JaCoCo)
         run: mvn -B -Psonar verify
 
-      # 2) analyse SonarCloud via le plugin Maven (lit les props du POM)
+      # 2) Analyse SonarCloud via le plugin Maven (lit le pom.xml)
       - name: SonarCloud (Maven)
         run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
 
   docker-push:
     needs: build-test-sonar
