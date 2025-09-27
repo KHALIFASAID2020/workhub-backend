@@ -23,14 +23,16 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # Génère le rapport JaCoCo (target/site/jacoco/jacoco.xml)
       - name: Build & test (JaCoCo)
         run: mvn -B -Psonar verify
 
+      # Analyse SonarCloud (lit les props du pom.xml)
       - name: SonarCloud (Maven)
         run: mvn -B -Psonar sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   # 2) Build & push image Docker vers GHCR
-    docker-push:
+  docker-push:
     needs: build-test-sonar
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
@@ -60,28 +62,4 @@ jobs:
             ghcr.io/${{ steps.meta.outputs.OWNER_LC }}/workhub-backend:${{ steps.meta.outputs.TAG }}
             ghcr.io/${{ steps.meta.outputs.OWNER_LC }}/workhub-backend:latest
 
-
-  # 3) Déploiement sur la VM (test des secrets dans l'étape via env.*)
-  deploy:
-    needs: docker-push
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    env:
-      VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-    steps:
-      - name: Skip deploy if secrets are missing
-        if: ${{ env.VPS_HOST == '' || env.VPS_USER == '' || env.SSH_PRIVATE_KEY == '' }}
-        run: echo "Deploy secrets missing; skipping deployment." && exit 0
-
-      - name: Deploy to VPS over SSH
-        if: ${{ env.VPS_HOST != '' && env.VPS_USER != '' && env.SSH_PRIVATE_KEY != '' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USER }}
-          key: ${{ env.SSH_PRIVATE_KEY }}
-          script: |
-            TAG=$(echo $GITHUB_SHA | cut -c1-8)
-            sudo /opt/workhub/deploy.sh "$TAG"
+  # 3) Déploiement sur la VM (vérifie la présence des secre
